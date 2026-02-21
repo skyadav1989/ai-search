@@ -73,6 +73,38 @@ def extract_price_filter(query):
         return int(value)
     return None
 
+def extract_use_case_intent(query):
+    try:
+        prompt = f"""
+            Extract structured ecommerce intent from this query.
+
+            Query: "{query}"
+
+            Return JSON only with keys:
+            - use_case
+            - important_features
+            - priority (price / quality / feature / general)
+
+            Example output:
+            {{
+            "use_case": "bedroom",
+            "important_features": ["low noise", "energy efficient"],
+            "priority": "feature"
+            }}
+            """
+
+        response = llm_model.generate_content(prompt)
+
+        import json
+        return json.loads(response.text)
+
+    except Exception:
+        return {
+            "use_case": None,
+            "important_features": [],
+            "priority": "general"
+        }
+
 def generate_related_terms_gemini(query, key_features_list):
     try:
         features_text = " | ".join(
@@ -161,13 +193,36 @@ def search_products(data: SearchRequest):
     query_embedding = embed_model.encode(query).reshape(1, -1)
     similarities = cosine_similarity(query_embedding, product_embeddings)[0]
 
+    intent_data = extract_use_case_intent(query)
+
+    important_features = intent_data.get("important_features", [])
+    priority = intent_data.get("priority", "general")
+
     df["similarity"] = similarities
+    df["boost"] = 0
+
+    # Feature boost
+    for feature in important_features:
+        df.loc[
+            df["Key Features"].str.contains(feature, case=False, na=False),
+            "boost"
+        ] += 0.05
+
+    # Priority-based boost
+    if priority == "price":
+        df["boost"] += (1 / (df["Price"] + 1)) * 0.02
+
+    if priority == "quality":
+        df["boost"] += df["Star Rating"].fillna(0).astype(float) * 0.01
 
     filtered_df = df.copy()
 
     if price_limit:
         filtered_df = filtered_df[filtered_df["Price"] <= price_limit]
 
+    df["final_score"] = df["similarity"] + df["boost"]
+
+    #results = df.sort_values(by="final_score", ascending=False).head(8)
     results = filtered_df.sort_values(by="similarity", ascending=False).head(8)
 
     top_features = results["Key Features"].dropna().tolist()[:5]

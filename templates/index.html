@@ -550,7 +550,7 @@
     <div id="results-wrap" style="display:none">
         <div class="results-meta">
             <div class="results-count" id="results-count"></div>
-            <div class="sort-pill">Sorted by relevance</div>
+            <!-- <div class="sort-pill">Sorted by relevance</div>-->
         </div>
         <div id="results" class="grid"></div>
     </div>
@@ -622,7 +622,7 @@
             const relatedDiv = document.getElementById("related");
             if (data.related_search_terms?.length) {
                 relatedDiv.innerHTML = `
-                    <div class="related-label">Related searches</div>
+                    <div class="related-label">People also searched</div>
                     <div class="chips">
                         ${data.related_search_terms.map(t =>
                             `<span class="chip" onclick="search('${t.trim().replace(/'/g,"\\'")}')">
