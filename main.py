@@ -206,3 +206,22 @@ def search_products(data: SearchRequest):
         "results": clean_results,
         "related_search_terms": related_terms
     }
+
+@app.get("/autocomplete")
+def autocomplete(q: str):
+
+    if not q or len(q) < 2:
+        return []
+
+    query_embedding = embed_model.encode(q).reshape(1, -1)
+    similarities = cosine_similarity(query_embedding, product_embeddings)[0]
+
+    df["temp_similarity"] = similarities
+
+    suggestions = (
+        df.sort_values(by="temp_similarity", ascending=False)
+        .head(5)["Product Name"]
+        .tolist()
+    )
+
+    return suggestions

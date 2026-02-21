@@ -458,6 +458,25 @@
             color: var(--muted);
         }
         .empty-icon { font-size: 44px; margin-bottom: 14px; }
+        .autocomplete-box {
+            position: absolute;
+            background: white;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-top: 50px;
+            z-index: 1000;
+            width: 669px;
+        }
+
+        .autocomplete-item {
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .autocomplete-item:hover {
+            background: #f3f4f6;
+        }
 
         @media (max-width: 600px) {
             .search-wrap { flex-wrap: wrap; }
@@ -489,6 +508,7 @@
         <input type="text" id="query" placeholder="e.g. 5 star inverter split AC under ₹40,000"
                onkeydown="if(event.key==='Enter') search()">
         <button class="search-btn" onclick="search()">Search →</button>
+        <div id="autocomplete-box" class="autocomplete-box"></div>
     </div>
 
     <div class="suggestions">
@@ -581,6 +601,7 @@
     }
 
     async function search(q = null) {
+        document.getElementById("autocomplete-box").innerHTML = "";
         const query = q || document.getElementById("query").value.trim();
         if (!query) return;
         if (q) document.getElementById("query").value = q;
@@ -692,6 +713,57 @@
         } finally {
             document.getElementById("loader").classList.remove("active");
         }
+    }
+
+    let debounceTimer;
+
+    document.getElementById("query").addEventListener("input", function () {
+        const value = this.value;
+
+        clearTimeout(debounceTimer);
+
+        if (value.length < 2) {
+            document.getElementById("autocomplete-box").innerHTML = "";
+            return;
+        }
+
+        debounceTimer = setTimeout(async () => {
+            const response = await fetch(`/autocomplete?q=${value}`);
+            const suggestions = await response.json();
+
+            const box = document.getElementById("autocomplete-box");
+            box.innerHTML = "";
+
+            suggestions.forEach(item => {
+                box.innerHTML += `
+                    <div class="autocomplete-item" onclick="selectSuggestion('${item}')">
+                        ${item}
+                    </div>
+                `;
+            });
+        }, 300); // 300ms delay
+    });
+
+    document.addEventListener("click", function(event) {
+        const input = document.getElementById("query");
+        const box = document.getElementById("autocomplete-box");
+
+        if (!input.contains(event.target) && !box.contains(event.target)) {
+            box.innerHTML = "";
+        }
+    });
+
+    document.getElementById("query").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            document.getElementById("autocomplete-box").innerHTML = "";
+            search();
+        }
+    });
+
+    function selectSuggestion(text) {
+        document.getElementById("query").value = text;
+        document.getElementById("autocomplete-box").innerHTML = "";
+        search(text);
     }
 </script>
 </body>
