@@ -73,24 +73,78 @@ def extract_price_filter(query):
         return int(value)
     return None
 
-def generate_related_terms_gemini(query):
+def generate_related_terms_gemini(query, key_features_list):
     try:
-        prompt = f"Generate 5 related AC search keywords for: {query}. Only comma separated."
+        features_text = " | ".join(
+            [f for f in key_features_list if f]
+        )
+
+        prompt = f"""
+            You are an ecommerce search assistant.
+
+            User searched for: "{query}"
+
+            Here are key features of relevant products:
+            {features_text}
+
+            Generate 5 short related search keywords.
+            Only return comma separated keywords.
+            No numbering.
+            No explanation.
+            """
+
         response = llm_model.generate_content(prompt)
-        return [t.strip() for t in response.text.strip().split(",") if t.strip()]
+
+        return [
+            t.strip()
+            for t in response.text.strip().split(",")
+            if t.strip()
+        ]
+
     except Exception:
         return []
     
 
 
-def generate_related_terms(query):
+def generate_related_terms(query, key_features_list):
     try:
+        # Combine top product features (limit to avoid long prompt)
+        features_text = " | ".join(
+            [f for f in key_features_list if f]
+        )[:1500]  # safety limit
+
+        prompt = f"""
+        You are an ecommerce search assistant.
+
+        User searched for: "{query}"
+
+        Here are key features of relevant products:
+        {features_text}
+
+        Generate 5 short related search keywords.
+        Only return comma separated keywords.
+        No numbering.
+        No explanation.
+        """
+
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": f"Generate 5 related AC search keywords for: {query}. Only comma separated."}],
-            max_tokens=100
+            messages=[
+                {"role": "system", "content": "You generate concise ecommerce search keywords."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=80,
+            temperature=0.4
         )
-        return [t.strip() for t in response.choices[0].message.content.split(",") if t.strip()]
+
+        text = response.choices[0].message.content
+
+        return [
+            t.strip()
+            for t in text.split(",")
+            if t.strip()
+        ]
+
     except Exception:
         return []
 
@@ -116,7 +170,9 @@ def search_products(data: SearchRequest):
 
     results = filtered_df.sort_values(by="similarity", ascending=False).head(8)
 
-    related_terms = generate_related_terms(query)
+    top_features = results["Key Features"].dropna().tolist()[:5]
+
+    related_terms = generate_related_terms(query, top_features)
 
     results = results.drop(columns=["embedding", "similarity"], errors="ignore")
     results = results.replace({np.nan: None})
