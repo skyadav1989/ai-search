@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Search</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f0f4fa;
+            --surface: #ffffff;
+            --card: #ffffff;
+            --border: #e2e8f2;
+            --accent: #2563eb;
+            --accent2: #7c3aed;
+            --accent-light: #eff6ff;
+            --text: #0f172a;
+            --text-2: #475569;
+            --muted: #94a3b8;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 4px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+        .nav-logo {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+        .nav-logo span { color: var(--accent2); }
+        .nav-tag {
+            background: var(--accent-light);
+            color: var(--accent);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .container {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 48px 24px 80px;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+        .hero h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.9rem, 4.5vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: var(--text);
+            margin-bottom: 10px;
+            line-height: 1.1;
+        }
+        .hero h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            color: var(--text-2);
+            font-size: 15px;
+        }
+
+        /* Search */
+        .search-wrap {
+            max-width: 680px;
+            margin: 0 auto 20px;
+            display: flex;
+            gap: 10px;
+            background: white;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 7px;
+            box-shadow: var(--shadow);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-wrap:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(37,99,235,0.08), var(--shadow);
+        }
+        .search-icon {
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+        #query {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14.5px;
+            color: var(--text);
+            background: transparent;
+            padding: 8px 6px;
+        }
+        #query::placeholder { color: var(--muted); }
+        .search-btn {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white;
+            border: none;
+            border-radius: 9px;
+            padding: 11px 24px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: opacity 0.2s, transform 0.15s;
+            white-space: nowrap;
+        }
+        .search-btn:hover { opacity: 0.88; transform: scale(1.02); }
+        .search-btn:active { transform: scale(0.97); }
+
+        /* Quick suggestions */
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            max-width: 680px;
+            margin: 0 auto 32px;
+        }
+        .suggestion {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 13px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+        .suggestion:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        /* Related chips */
+        #related { margin-bottom: 28px; }
+        .related-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            background: var(--accent-light);
+            border: 1px solid rgba(37,99,235,0.2);
+            color: var(--accent);
+            font-size: 12.5px;
+            font-weight: 500;
+            padding: 5px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+        .chip:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+        /* Loader */
+        #loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 72px 0;
+            gap: 16px;
+        }
+        #loader.active { display: flex; }
+
+        .loader-ring {
+            position: relative;
+            width: 54px;
+            height: 54px;
+        }
+        .loader-ring svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .ring-bg { animation: none; }
+        .ring-fg { animation: spin 1s linear infinite; transform-origin: center; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loader-dots {
+            display: flex;
+            gap: 6px;
+        }
+        .loader-dots span {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            animation: dotpulse 1.3s ease-in-out infinite;
+        }
+        .loader-dots span:nth-child(1) { background: var(--accent); }
+        .loader-dots span:nth-child(2) { background: #5b21b6; animation-delay: 0.18s; }
+        .loader-dots span:nth-child(3) { background: var(--accent2); animation-delay: 0.36s; }
+        @keyframes dotpulse {
+            0%,80%,100% { transform: scale(0.6); opacity: 0.35; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        .loader-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-2);
+        }
+        .loader-sub {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: -8px;
+        }
+
+        /* Results meta */
+        .results-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .results-count { font-size: 13px; color: var(--text-2); font-weight: 500; }
+        .results-count strong { color: var(--text); }
+        .sort-pill {
+            font-size: 11.5px;
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            padding: 4px 12px;
+            border-radius: 999px;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 18px;
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+            animation: fadeUp 0.4s ease both;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(37,99,235,0.22);
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+        .card-type-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .card-type {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .card-type::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: inline-block;
+        }
+        .match-badge {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+        .card h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.45;
+        }
+
+        .card-body {
+            padding: 16px 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+        }
+
+        /* Price prominent */
+        .price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+        .price-big {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .price-label {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        /* Info rows */
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .info-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+        .info-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            text-align: right;
+        }
+        .stars-row { display: flex; align-items: center; gap: 4px; }
+        .star { font-size: 13px; }
+        .star.full { color: #f59e0b; }
+        .star.empty { color: #d1d5db; }
+        .star-num { font-size: 12px; color: var(--text-2); }
+
+        /* Features */
+        .features-box {
+            background: #f7f9ff;
+            border: 1px solid #e5ebfa;
+            border-radius: 10px;
+            padding: 11px 13px;
+        }
+        .features-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+        .feature-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+        .feature-tag {
+            background: white;
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 6px;
+        }
+
+        /* Footer */
+        .card-divider { height: 1px; background: var(--border); }
+        .card-footer {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .sim-wrap { flex: 1; }
+        .sim-bar-bg {
+            height: 4px;
+            background: #e8eef8;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .sim-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 999px;
+            width: 0%;
+            transition: width 1s cubic-bezier(0.16,1,0.3,1);
+        }
+        .sim-label { font-size: 10.5px; color: var(--muted); }
+
+        /* Empty */
+        .empty {
+            grid-column: 1/-1;
+            text-align: center;
+            padding: 64px 20px;
+            color: var(--muted);
+        }
+        .empty-icon { font-size: 44px; margin-bottom: 14px; }
+
+        @media (max-width: 600px) {
+            .search-wrap { flex-wrap: wrap; }
+            .search-btn { width: 100%; }
+            .hero h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-logo">Cool<span>Find</span></div>
+    <div class="nav-tag">AI Powered</div>
+</nav>
+
+<div class="container">
+
+    <div class="hero">
+        <h1>Find Your <em>Perfect </em></h1>
+        <p>Describe what you need — our AI finds the best match instantly</p>
+    </div>
+
+    <div class="search-wrap">
+        <div class="search-icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+        </div>
+        <input type="text" id="query" placeholder="e.g. 5 star inverter split AC under ₹40,000"
+               onkeydown="if(event.key==='Enter') search()">
+        <button class="search-btn" onclick="search()">Search →</button>
+    </div>
+
+    <div class="suggestions">
+        <span class="suggestion" onclick="search('5 star inverter AC under 35000')">⚡ 5-star inverter under ₹35K</span>
+        <span class="suggestion" onclick="search('1.5 ton split AC with wifi control')">📶 1.5 ton with WiFi</span>
+        <span class="suggestion" onclick="search('best AC for small bedroom')">🏠 Best for small room</span>
+        <span class="suggestion" onclick="search('window AC under 25000')">🪟 Window AC under ₹25K</span>
+        <span class="suggestion" onclick="search('Mixer Grinder')"> Mixer Grinder</span>
+        <span class="suggestion" onclick="search('Dry iron under 1000')">Dry iron under 1000</span>
+    </div>
+
+    <div id="related"></div>
+
+    <div id="loader">
+        <div class="loader-ring">
+            <svg class="ring-bg" viewBox="0 0 54 54">
+                <circle cx="27" cy="27" r="23" fill="none" stroke="#e2e8f2" stroke-width="4"/>
+            </svg>
+            <svg class="ring-fg" viewBox="0 0 54 54">
+                <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#2563eb"/>
+                        <stop offset="100%" stop-color="#7c3aed"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="27" cy="27" r="23" fill="none"
+                    stroke="url(#ringGrad)" stroke-width="4"
+                    stroke-linecap="round"
+                    stroke-dasharray="144" stroke-dashoffset="100"/>
+            </svg>
+        </div>
+        <div class="loader-dots">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="loader-text">Searching with AI…</div>
+        <div class="loader-sub">Analyzing semantics &amp; ranking best matches</div>
+    </div>
+
+    <div id="results-wrap" style="display:none">
+        <div class="results-meta">
+            <div class="results-count" id="results-count"></div>
+            <div class="sort-pill">Sorted by relevance</div>
+        </div>
+        <div id="results" class="grid"></div>
+    </div>
+
+</div>
+
+<script>
+    function getStarsHTML(rating) {
+        if(rating=="Not Available")
+            return '<span class="star-num">Rating not available</span>';
+        const n = Math.round(parseFloat(rating) || 0);
+        let html = '<div class="stars-row">';
+        for (let i = 1; i <= 5; i++) {
+            html += `<span class="star ${i <= n ? 'full' : 'empty'}">★</span>`;
+        }
+        html += `<span class="star-num">${rating || '—'}</span></div>`;
+        return html;
+    }
+
+    function formatPrice(p) {
+        
+        if (!p && p !== 0) return '—';
+        const formattedPrice = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+            }).format(p);
+
+        return  formattedPrice;
+    }
+
+    function parseFeatures(text) {
+        if (!text || text === 'nan' || text === 'None') return [];
+        return String(text).split(/[,|;]/)
+            .map(f => f.trim())
+            .filter(f => f.length > 1 && f.length < 45)
+            .slice(0, 5);
+    }
+
+    function guessType(name) {
+        if (!name) return 'Air Conditioner';
+        const n = name.toLowerCase();
+        if (n.includes('window')) return 'Window AC';
+        if (n.includes('iron')) return 'Iron';
+        if (n.includes('cassette')) return 'Cassette AC';
+        if (n.includes('tower') || n.includes('floor')) return 'Tower AC';
+        return 'Split AC';
+    }
+
+    async function search(q = null) {
+        const query = q || document.getElementById("query").value.trim();
+        if (!query) return;
+        if (q) document.getElementById("query").value = q;
+
+        document.getElementById("loader").classList.add("active");
+        document.getElementById("results-wrap").style.display = "none";
+        document.getElementById("related").innerHTML = "";
+
+        try {
+            const res  = await fetch("/search", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query })
+            });
+            const data = await res.json();
+
+            // Related
+            const relatedDiv = document.getElementById("related");
+            if (data.related_search_terms?.length) {
+                relatedDiv.innerHTML = `
+                    <div class="related-label">Related searches</div>
+                    <div class="chips">
+                        ${data.related_search_terms.map(t =>
+                            `<span class="chip" onclick="search('${t.trim().replace(/'/g,"\\'")}')">
+                                ${t.trim()}
+                            </span>`
+                        ).join('')}
+                    </div>`;
+            }
+
+            // Cards
+            const resultsDiv = document.getElementById("results");
+            const countDiv   = document.getElementById("results-count");
+            resultsDiv.innerHTML = "";
+
+            if (!data.results?.length) {
+                resultsDiv.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>No results found. Try a different query.</p></div>`;
+            } else {
+                const maxSim = Math.max(...data.results.map(r => r.similarity || 0));
+                countDiv.innerHTML = `<strong>${data.results.length} products</strong> found for "<em>${query}</em>"`;
+
+                data.results.forEach((p, i) => {
+                    const sim    = p.similarity || 0;
+                    const simPct = maxSim > 0 ? Math.round((sim / maxSim) * 100) : 0;
+                    const feats  = parseFeatures(p["Key Features"]);
+
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.style.animationDelay = `${i * 55}ms`;
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="card-type-row">
+                                <div class="card-type">${p["Category"]}</div>
+                            </div>
+                            <h3>${p["Product Name"] || "Unknown Product"}</h3>
+                            <img src="${p['Image URL'] || ''}" alt="${p['Product Name']}"
+             onerror="this.style.display='none'"
+             style="width:100%;height:180px;object-fit:cover;display:block;"/>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="price-row">
+                                <div class="price-big">${formatPrice(p["Price"])}</div>
+                                <div class="price-label">Incl. taxes</div>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Rating</span>
+                                <span class="info-value">${getStarsHTML(p["Star Rating"])}</span>
+                            </div>
+
+                            ${p["Brand"] ? `
+                            <div class="info-row">
+                                <span class="info-label">Brand</span>
+                                <span class="info-value">${p["Brand"]}</span>
+                            </div>` : ''}
+
+                            ${p["Capacity"] || p["Tonnage"] ? `
+                            <div class="info-row">
+                                <span class="info-label">Capacity</span>
+                                <span class="info-value">${p["Capacity"] || p["Tonnage"]}</span>
+                            </div>` : ''}
+
+                            ${feats.length ? `
+                            <div class="features-box">
+                                <div class="features-title">Key Features</div>
+                                <div class="feature-tags">
+                                    ${feats.map(f => `<span class="feature-tag">${f}</span>`).join('')}
+                                </div>
+                            </div>` : ''}
+                        </div>
+
+                    `;
+                    resultsDiv.appendChild(card);
+                });
+
+                // Animate bars
+                requestAnimationFrame(() => {
+                    document.querySelectorAll('.sim-bar-fill').forEach(el => {
+                        el.style.width = el.dataset.w + '%';
+                    });
+                });
+            }
+
+            document.getElementById("results-wrap").style.display = "block";
+        } catch (err) {
+            console.error(err);
+        } finally {
+            document.getElementById("loader").classList.remove("active");
+        }
+    }
+</script>
+</body>
+</html>
