@@ -1,11 +1,5 @@
 fastapi
-uvicorn[standard]
-pandas
-numpy
-scikit-learn
-sentence-transformers
-torch
-google-generativeai
-groq
+uvicorn
+httpx
 python-dotenv
-jinja2
+groq
