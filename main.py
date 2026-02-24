@@ -46,7 +46,12 @@ appliance_df = pd.read_csv("Appliances_Product_Details.csv")
 appliance_df["category"] = "Appliance"
 appliance_df["Price"] = pd.to_numeric(appliance_df["Price"].astype(str).str.replace(r'\s+', '', regex=True), errors='coerce')
 
-df = pd.concat([ac_df, appliance_df], ignore_index=True)
+ceilingfans_df = pd.read_csv("Ceiling_Fans_Product_Details.csv")
+ceilingfans_df["category"] = "Ceiling Fans"
+ceilingfans_df["Price"] = pd.to_numeric(ceilingfans_df["Price"].astype(str).str.replace(r'\s+', '', regex=True), errors='coerce')
+
+
+df = pd.concat([ac_df, appliance_df, ceilingfans_df], ignore_index=True)
 
 df["combined_text"] = (
     df["Product Name"].astype(str) + " " +
@@ -288,7 +293,8 @@ def autocomplete(q: str):
     # Convert list to string for caching
     features_text = "||".join(top_features)
 
-    related_terms = cached_autocomplete(q, features_text)
+    #related_terms = cached_autocomplete(q, features_text)
+    related_terms = generate_related_terms(q, top_features)
 
     return related_terms
 
