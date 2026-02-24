@@ -507,6 +507,75 @@
             .search-btn { width: 100%; }
             .hero h1 { font-size: 1.8rem; }
         }
+
+        /* PDP Modal */
+        .pdp-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pdp-modal.active { display: flex; }
+
+        .pdp-content {
+            background: white;
+            width: 900px;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 16px;
+            padding: 30px;
+            position: relative;
+        }
+
+        .pdp-close {
+            position: absolute;
+            top: 14px;
+            right: 20px;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .pdp-image {
+            width: 100%;
+            height: 320px;
+            object-fit: contain;
+            margin-bottom: 20px;
+        }
+
+        .pdp-title {
+            font-family: 'Syne';
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px,1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .related-card {
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .related-card:hover {
+            border-color: var(--accent);
+        }
+        .related-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+        }
     </style>
 </head>
 <body>
@@ -579,6 +648,13 @@
     </div>
 
 </div>
+<div id="pdp-modal" class="pdp-modal">
+    <div class="pdp-content">
+        <span class="pdp-close" onclick="closePDP()">×</span>
+        <div id="pdp-body"></div>
+        <div id="pdp-related"></div>
+    </div>
+</div>
 
 <script>
     function getStarsHTML(rating) {
@@ -640,6 +716,8 @@
                 body: JSON.stringify({ query })
             });
             const data = await res.json();
+
+            window.currentProducts = data.results;
 
             // Related
             const relatedDiv = document.getElementById("related");
@@ -716,6 +794,11 @@
                                     ${feats.map(f => `<span class="feature-tag">${f}</span>`).join('')}
                                 </div>
                             </div>` : ''}
+                            <button class="search-btn" 
+                                style="margin-top:10px;padding:8px 12px;font-size:12px;"
+                                onclick="openPDP('${p["SKU"]}')">
+                                View Details
+                            </button>
                         </div>
 
                     `;
@@ -847,6 +930,60 @@
         document.getElementById("autocomplete-box").innerHTML = "";
         search(text);
     }
+
+    async function openPDP(sku) {
+
+    const product = window.currentProducts.find(p => p.SKU === sku);
+    if (!product) return;
+
+    const modal = document.getElementById("pdp-modal");
+    const body  = document.getElementById("pdp-body");
+    const relatedDiv = document.getElementById("pdp-related");
+
+    modal.classList.add("active");
+
+    const feats = parseFeatures(product["Key Features"]);
+
+    body.innerHTML = `
+        <img src="${product['Image URL'] || ''}" class="pdp-image"/>
+        <div class="pdp-title">${product["Product Name"]}</div>
+        <div class="price-big">${formatPrice(product["Price"])}</div>
+        <div style="margin:10px 0;">${getStarsHTML(product["Star Rating"])}</div>
+
+        <div class="features-box">
+            <div class="features-title">Key Features</div>
+            <div class="feature-tags">
+                ${feats.map(f => `<span class="feature-tag">${f}</span>`).join('')}
+            </div>
+        </div>
+    `;
+
+    // Fetch related products
+    const res = await fetch(`/related-products?sku=${sku}`);
+    const related = await res.json();
+
+    relatedDiv.innerHTML = `
+        <h3 style="margin-top:25px;">Related Products</h3>
+        <div class="related-grid">
+            ${related.map(r => `
+                <div class="related-card" onclick="openPDP('${r.SKU}')">
+                    <img src="${r['Image URL'] || ''}"/>
+                    <div style="font-size:12px;font-weight:600;">
+                        ${r["Product Name"]}
+                    </div>
+                    <div style="font-size:12px;color:var(--accent);">
+                        ${formatPrice(r["Price"])}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function closePDP() {
+    document.getElementById("pdp-modal").classList.remove("active");
+}
 </script>
+
 </body>
 </html>

@@ -291,3 +291,40 @@ def autocomplete(q: str):
     related_terms = cached_autocomplete(q, features_text)
 
     return related_terms
+
+@app.get("/related-products")
+def related_products(sku: str):
+
+    product = df[df["SKU"] == sku]
+
+    if product.empty:
+        return []
+
+    product_embedding = product.iloc[0]["embedding"].reshape(1, -1)
+
+    similarities = cosine_similarity(product_embedding, product_embeddings)[0]
+
+    df["temp_similarity"] = similarities
+
+    related = (
+        df[df["SKU"] != sku]
+        .sort_values(by="temp_similarity", ascending=False)
+        .head(4)
+    )
+
+    related = related.replace({np.nan: None})
+
+    results = []
+
+    for row in related.to_dict(orient="records"):
+        results.append({
+            "SKU": row.get("SKU"),
+            "Product Name": row.get("Product Name"),
+            "Price": row.get("Price"),
+            "Star Rating": row.get("Star Rating"),
+            "Key Features": row.get("Key Features"),
+            "Image URL": row.get("Image URL"),
+            "Category": row.get("category")
+        })
+
+    return results
