@@ -13,6 +13,7 @@ from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 from dotenv import load_dotenv
 from groq import Groq
+from functools import lru_cache
 
 
 
@@ -262,6 +263,10 @@ def search_products(data: SearchRequest):
         "related_search_terms": related_terms
     }
 
+@lru_cache(maxsize=200)
+def cached_autocomplete(query: str, features_text: str):
+    return generate_related_terms(query, features_text.split("||"))
+
 @app.get("/autocomplete")
 def autocomplete(q: str):
 
@@ -273,10 +278,16 @@ def autocomplete(q: str):
 
     df["temp_similarity"] = similarities
 
-    suggestions = (
+    top_results = (
         df.sort_values(by="temp_similarity", ascending=False)
-        .head(5)["Product Name"]
-        .tolist()
+        .head(5)
     )
 
-    return suggestions
+    top_features = top_results["Key Features"].dropna().tolist()[:5]
+
+    # Convert list to string for caching
+    features_text = "||".join(top_features)
+
+    related_terms = cached_autocomplete(q, features_text)
+
+    return related_terms

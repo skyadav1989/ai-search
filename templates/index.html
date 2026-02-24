@@ -478,6 +478,30 @@
             background: #f3f4f6;
         }
 
+        /* Autocomplete Loader */
+        .autocomplete-loader {
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .autocomplete-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e2e8f2;
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spinMini 0.6s linear infinite;
+        }
+
+        @keyframes spinMini {
+            to { transform: rotate(360deg); }
+        }
         @media (max-width: 600px) {
             .search-wrap { flex-wrap: wrap; }
             .search-btn { width: 100%; }
@@ -513,7 +537,7 @@
 
     <div class="suggestions">
         <span class="suggestion" onclick="search('5 star inverter AC under 35000')"> 5-star inverter under ₹35K</span>
-        <span class="suggestion" onclick="search('window AC under 30K')">Window AC under ₹30K</span>
+        <span class="suggestion" onclick="search('Window AC under 30K')">Window AC under ₹30K</span>
         <span class="suggestion" onclick="search('best AC for small bedroom')">Best for small room</span>
         <span class="suggestion" onclick="search('Mixer Grinder')"> Mixer Grinder</span>
         <span class="suggestion" onclick="search('Dry iron under 1000')">Dry iron under 1000</span>
@@ -718,6 +742,64 @@
 
     document.getElementById("query").addEventListener("input", function () {
         const value = this.value;
+        const box = document.getElementById("autocomplete-box");
+
+        clearTimeout(debounceTimer);
+
+        if (value.length < 2) {
+            box.innerHTML = "";
+            return;
+        }
+
+        debounceTimer = setTimeout(async () => {
+
+            // 🔥 SHOW LOADER
+            box.innerHTML = `
+                <div class="autocomplete-loader">
+                    <div class="autocomplete-spinner"></div>
+                    Generating AI suggestions...
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/autocomplete?q=${value}`);
+                const suggestions = await response.json();
+
+                box.innerHTML = "";
+
+                if (!suggestions.length) {
+                    box.innerHTML = `
+                        <div class="autocomplete-loader">
+                            No suggestions found
+                        </div>
+                    `;
+                    return;
+                }
+
+                suggestions.forEach(item => {
+                    box.innerHTML += `
+                        <div class="autocomplete-item" onclick="selectSuggestion('${item.replace(/'/g,"\\'")}')">
+                            ${item}
+                        </div>
+                    `;
+                });
+
+            } catch (error) {
+                box.innerHTML = `
+                    <div class="autocomplete-loader">
+                        Error loading suggestions
+                    </div>
+                `;
+            }
+
+        }, 300);
+
+    });
+    /*
+    let debounceTimer;
+
+    document.getElementById("query").addEventListener("input", function () {
+        const value = this.value;
 
         clearTimeout(debounceTimer);
 
@@ -743,6 +825,7 @@
         }, 300); // 300ms delay
     });
 
+    */
     document.addEventListener("click", function(event) {
         const input = document.getElementById("query");
         const box = document.getElementById("autocomplete-box");
