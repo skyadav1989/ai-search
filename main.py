@@ -7,6 +7,8 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
@@ -27,10 +29,23 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 # Gemini Flash Lite (only for related keywords)
 llm_model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
-# Local Embedding Model (Stable & Free)
-embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+
 
 app = FastAPI(title="AC Semantic Search UI")
+
+
+origins = [
+    "http://4.188.81.152",
+    "http://4.188.81.152:80"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://4.188.81.152"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 #app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -61,10 +76,28 @@ df["combined_text"] = (
     df["category"].astype(str)
 )
 
-print("Generating embeddings locally...")
-df["embedding"] = df["combined_text"].apply(lambda x: embed_model.encode(x))
-product_embeddings = np.vstack(df["embedding"].values)
-print("Embeddings ready.")
+EMBEDDING_FILE = "product_embeddings.npy"
+META_FILE = "products_with_meta.pkl"
+
+embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+
+if os.path.exists(META_FILE) and os.path.exists(EMBEDDING_FILE):
+    print("Loading embeddings from disk...")
+
+    df = pd.read_pickle(META_FILE)
+    product_embeddings = np.load(EMBEDDING_FILE)
+
+    print("Embeddings loaded successfully.")
+
+else:
+
+    print("Generating embeddings locally...")
+    df["embedding"] = df["combined_text"].apply(lambda x: embed_model.encode(x))
+    product_embeddings = np.vstack(df["embedding"].values)
+    print("Embeddings ready.")
+    np.save("product_embeddings.npy", product_embeddings)
+    df.to_pickle("products_with_meta.pkl")
+    print("Saved successfully.")
 
 class SearchRequest(BaseModel):
     query: str
